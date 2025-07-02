@@ -7,7 +7,7 @@ on:
   # This cron expression '0 */6 * * *' means "at minute 0 past every 6th hour".
   # So, it will run at 00:00, 06:00, 12:00, 18:00 UTC.
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '0 */4 * * *'
 
   # This allows you to manually trigger the workflow from the 'Actions' tab.
   workflow_dispatch:
