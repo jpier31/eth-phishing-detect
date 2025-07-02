@@ -1,0 +1,53 @@
+# .github/workflows/sync-upstream.yml
+name: Sync Fork with Upstream
+
+# This section tells GitHub when to run this workflow.
+on:
+  # We want it to run on a schedule, like a cron job.
+  # This cron expression '0 */6 * * *' means "at minute 0 past every 6th hour".
+  # So, it will run at 00:00, 06:00, 12:00, 18:00 UTC.
+  schedule:
+    - cron: '0 */6 * * *'
+
+  # This allows you to manually trigger the workflow from the 'Actions' tab.
+  workflow_dispatch:
+
+# This defines the "jobs" (tasks) this workflow will perform.
+jobs:
+  sync_with_upstream: # This is the name of our job.
+    runs-on: ubuntu-latest # This tells GitHub to run this job on a fresh Ubuntu Linux server.
+
+    # These are the steps (commands) the job will execute, in order.
+    steps:
+      - name: Checkout repository # A friendly name for this step.
+        uses: actions/checkout@v4 # This is a pre-made GitHub Action that clones (downloads) your repository.
+        with:
+          fetch-depth: 0 # Makes sure to get the full history, important for syncing.
+
+      - name: Configure Git for merging # Another friendly name.
+        # 'run:' means execute these commands directly on the server.
+        run: |
+          git config user.name "GitHub Actions Bot" # Tells Git who is making changes.
+          git config user.email "actions@github.com" # Sets an email for the "bot".
+          # 'git remote add upstream ...' adds a shortcut name 'upstream' pointing to the original MetaMask repo.
+          # '|| true' means "even if this fails (e.g., if 'upstream' already exists), keep going".
+          git remote add upstream https://github.com/MetaMask/eth-phishing-detect.git || true
+
+      - name: Fetch upstream changes # Gets the latest changes from the original MetaMask repo.
+        run: git fetch upstream
+
+      - name: Merge upstream into main # Combines MetaMask's changes into your fork.
+        # 'git checkout main' switches to your fork's main branch.
+        # 'git pull upstream main --rebase' pulls new changes from MetaMask and applies your changes on top.
+        # If your main branch is called 'master', change 'main' to 'master' here and in the push step.
+        run: |
+          git checkout main
+          git pull upstream main --rebase
+
+      - name: Push changes to fork # Saves the combined changes back to your fork.
+        # 'git push origin main' sends the updated 'main' branch to YOUR fork.
+        # 'origin' refers to your own fork.
+        run: git push origin main
+        env: # This section provides environment variables for the command.
+          # GITHUB_TOKEN is a special secret provided by GitHub that allows the action to write to your repo.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
