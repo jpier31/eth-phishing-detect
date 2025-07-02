@@ -1,0 +1,63 @@
+# .github/workflows/email-alert.yml
+name: Phishing Detect Updates Notifier
+
+# This workflow runs when new code is pushed to the 'main' branch of your fork.
+# The 'sync-upstream.yml' workflow (Part 3) will cause these pushes.
+on:
+  push:
+    branches:
+      - main # Or 'master' if your branch is called master
+    # Only run if files in the 'src/' directory (where blacklist.json, patterns.json are) change.
+    paths:
+      - 'src/**' # This means "any file or folder within the 'src/' directory"
+
+jobs:
+  send_email_notification:
+    runs-on: ubuntu-latest
+    # Only run this job if the previous sync job was successful (optional, but good practice)
+    # needs: sync_with_upstream # <-- If you want to link it to the sync job. Requires the sync job to create an output.
+                              # For simplicity for new users, we will skip 'needs' for now and rely on 'on: push'.
+
+    steps:
+      - name: Checkout repository # We need to re-clone the repo to access its files.
+        uses: actions/checkout@v4
+
+      - name: Get commit message and author # Prepare info for the email.
+        id: commit_info # Assign an ID to this step to access its outputs.
+        run: |
+          # Get the latest commit message that includes a change in src/
+          COMMIT_MESSAGE=$(git log -1 --pretty=%B --full-diff src/)
+          COMMIT_AUTHOR=$(git log -1 --pretty=%an --full-diff src/)
+          echo "commit_message=$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
+          echo "commit_author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
+
+      - name: Send email notification # This step uses a pre-made action to send email.
+        uses: dawidd6/action-send-mail@v3
+        with:
+          # Email server details from your GitHub Secrets.
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          # Email recipient and sender.
+          subject: 'Phishing Detect Update - New Changes in src/ Detected!'
+          to: 'jeremy.pierson@broadcom.com' # <--- CHANGE THIS TO YOUR ACTUAL EMAIL ADDRESS
+          from: 'GitHub Actions <jeremy.pierson@broadcom.com>' # <--- CHANGE THIS TO YOUR ACTUAL EMAIL ADDRESS
+          # Email body includes details about the latest change.
+          body: |
+            Hello!
+
+            Changes were detected in the MetaMask eth-phishing-detect repository's 'src/' directory (likely new blacklist/pattern entries).
+
+            **Latest Commit Details:**
+            Author: ${{ steps.commit_info.outputs.commit_author }}
+            Message:
+            ${{ steps.commit_info.outputs.commit_message }}
+
+            You can view the changes in your fork here:
+            https://github.com/YOUR_USERNAME/eth-phishing-detect/commits/main/src/
+
+            Or on the original repository:
+            https://github.com/MetaMask/eth-phishing-detect/commits/main/src/
+
+            Stay safe online!
