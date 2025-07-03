@@ -22,7 +22,7 @@ jobs:
       - name: Checkout repository # A friendly name for this step.
         uses: actions/checkout@v4 # This is a pre-made GitHub Action that clones (downloads) your repository.
         with:
-          fetch-depth: 1000 # Makes sure to get the full history, important for syncing.
+          fetch-depth: 1 # Makes sure to get the full history, important for syncing.
 
       - name: Configure Git for merging # Another friendly name.
         # 'run:' means execute these commands directly on the server.
